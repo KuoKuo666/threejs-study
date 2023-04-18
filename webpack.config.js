@@ -1,11 +1,13 @@
 const path = require('path')
+const TerserPlugin = require('terser-webpack-plugin')
 const HtmlWebpackPlugin = require('html-webpack-plugin')
 
 module.exports = {
     entry: './src/index.ts',
     output: {
-        filename: 'bundle.js',
-        path: path.resolve(__dirname, 'dist')
+        filename: '[name].[fullhash:7].js',
+        path: path.resolve(__dirname, 'dist'),
+        clean: true
     },
     resolve: {
         extensions: ['.ts', '.js']
@@ -28,5 +30,13 @@ module.exports = {
         new HtmlWebpackPlugin({
             template: './public/index.html'
         })
-    ]
+    ],
+    optimization: {
+        minimize: true,
+        minimizer: [
+            new TerserPlugin({
+                extractComments: false
+            })
+        ]
+    }
 }
