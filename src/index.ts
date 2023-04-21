@@ -1,5 +1,6 @@
 import * as THREE from 'three'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 
 const scene = new THREE.Scene()
 scene.background = new THREE.Color('white')
@@ -18,6 +19,14 @@ const renderer = new THREE.WebGLRenderer({ antialias: true })
 renderer.setSize(window.innerWidth, window.innerHeight)
 document.body.appendChild(renderer.domElement)
 
+const controls = new OrbitControls(camera, renderer.domElement)
+controls.update()
+
+// 自动旋转
+controls.autoRotate = true
+// 阻尼衰减
+controls.enableDamping = true
+
 const loader = new GLTFLoader()
 loader.load('gltf/SheenChair.glb', (gltf) => {
     console.log(gltf)
@@ -26,6 +35,8 @@ loader.load('gltf/SheenChair.glb', (gltf) => {
 
 const animate = () => {
     requestAnimationFrame(animate)
+    // 如果不开启自动旋转/阻尼衰减，可以不每帧调用
+    controls.update()
     renderer.render(scene, camera)
 }
 animate()
