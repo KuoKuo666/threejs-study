@@ -1,6 +1,7 @@
 const path = require('path')
 const TerserPlugin = require('terser-webpack-plugin')
 const HtmlWebpackPlugin = require('html-webpack-plugin')
+const CopyPlugin = require('copy-webpack-plugin')
 
 module.exports = {
     entry: './src/index.ts',
@@ -29,6 +30,11 @@ module.exports = {
     plugins: [
         new HtmlWebpackPlugin({
             template: './public/index.html'
+        }),
+        new CopyPlugin({
+            patterns: [
+                { from: './public/gltf', to: 'gltf' }
+            ]
         })
     ],
     optimization: {
