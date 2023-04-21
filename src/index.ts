@@ -1,48 +1,58 @@
 import * as THREE from 'three'
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
+import { initCamera, initScene, initWebGLRenderer } from './init'
+import { loadGLTF } from './load'
 
-const scene = new THREE.Scene()
-scene.background = new THREE.Color('white')
-const camera = new THREE.PerspectiveCamera(
-    55,
-    window.innerWidth / window.innerHeight,
-    0.1,
-    1000
-)
-camera.position.set(0, 3, 5)
-camera.lookAt(new THREE.Vector3(0, 0, 0))
-// 环境光
-const light = new THREE.AmbientLight('white', 1.5)
-scene.add(light)
-const renderer = new THREE.WebGLRenderer({ antialias: true })
-renderer.setSize(window.innerWidth, window.innerHeight)
-document.body.appendChild(renderer.domElement)
+class Game {
+    scene: THREE.Scene
+    camera: THREE.PerspectiveCamera
+    renderer: THREE.WebGLRenderer
+    orbitControls: OrbitControls
 
-const controls = new OrbitControls(camera, renderer.domElement)
-controls.update()
+    constructor() {
+        this.scene = initScene()
+        this.camera = initCamera()
+        this.scene.add(this.camera)
+        this.renderer = initWebGLRenderer()
+        this.orbitControls = this.addOrbitControls(this.camera, this.renderer)
+        this.addModel()
+        this.addResizeEventListener()
+    }
 
-// 自动旋转
-controls.autoRotate = true
-// 阻尼衰减
-controls.enableDamping = true
+    addOrbitControls(camera: THREE.Camera, renderer: THREE.WebGLRenderer) {
+        const controls = new OrbitControls(camera, renderer.domElement)
+        controls.autoRotate = true
+        controls.enableDamping = true
+        controls.update()
+        return controls
+    }
 
-const loader = new GLTFLoader()
-loader.load('gltf/SheenChair.glb', (gltf) => {
-    console.log(gltf)
-    scene.add(gltf.scene)
-})
+    async addModel() {
+        const model = await loadGLTF('gltf/SheenChair.glb')
+        this.scene.add(model)
+    }
 
-const animate = () => {
-    requestAnimationFrame(animate)
-    // 如果不开启自动旋转/阻尼衰减，可以不每帧调用
-    controls.update()
-    renderer.render(scene, camera)
+    addResizeEventListener() {
+        window.addEventListener('resize', () => {
+            this.camera.aspect = window.innerWidth / window.innerHeight
+            this.camera.updateProjectionMatrix()
+            this.renderer.setSize(window.innerWidth, window.innerHeight)
+        })
+    }
+
+    startMainLoop() {
+        // 等待一帧用于初始化
+        Promise.resolve().then(() => {
+            this.step()
+        })
+    }
+
+    step() {
+        requestAnimationFrame(this.step.bind(this))
+        this.orbitControls && this.orbitControls.update()
+        this.renderer.render(this.scene, this.camera)
+    }
 }
-animate()
 
-window.addEventListener('resize', () => {
-    camera.aspect = window.innerWidth / window.innerHeight
-    camera.updateProjectionMatrix()
-    renderer.setSize(window.innerWidth, window.innerHeight)
-})
+const game = new Game()
+game.startMainLoop()
