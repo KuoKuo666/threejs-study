@@ -1,5 +1,9 @@
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
+import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer'
+import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass'
+import { OutlinePass } from 'three/examples/jsm/postprocessing/OutlinePass'
+import { mergeBufferGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils'
 import { initCamera, initScene, initWebGLRenderer } from './init'
 import { loadGLTF } from './load'
 import { AnimationManager } from './animation'
@@ -15,26 +19,45 @@ class Game {
 
     animationManager = new AnimationManager()
 
+    composer: EffectComposer
+    outlinePass: OutlinePass
+
     constructor() {
         this.scene = initScene()
         this.camera = initCamera()
         this.scene.add(this.camera)
         this.renderer = initWebGLRenderer()
+
         this.orbitControls = this.addOrbitControls(this.camera, this.renderer)
         this.addModel()
         this.addResizeEventListener()
         this.addClickEvent()
+
+        this.composer = new EffectComposer(this.renderer)
+		const renderPass = new RenderPass(this.scene, this.camera)
+		this.composer.addPass(renderPass)
+
+		const outlinePass = new OutlinePass(new THREE.Vector2(window.innerWidth, window.innerHeight), this.scene, this.camera)
+        outlinePass.edgeStrength = 4
+        outlinePass.edgeGlow = 1
+        outlinePass.edgeThickness = 1
+        outlinePass.visibleEdgeColor.set('#ffffff')
+        outlinePass.hiddenEdgeColor.set('#190a05')
+        this.composer.addPass(outlinePass)
+
+        this.outlinePass = outlinePass
     }
 
     addClickEvent() {
-        this.renderer.domElement.addEventListener('click', (ev) => {
+        this.renderer.domElement.addEventListener('pointermove', (ev) => {
             this.mouse.x = (ev.clientX / window.innerWidth) * 2 - 1
             this.mouse.y = -(ev.clientY / window.innerHeight) * 2 + 1
             this.raycaster.setFromCamera(this.mouse, this.camera)
             const intersects = this.raycaster.intersectObject(this.scene, true)
-            console.log(intersects)
-            if (intersects[0]) {
-                this.animationManager.addOnePosAnima(intersects[0].object)
+            if (intersects.length) {
+                this.outlinePass.selectedObjects = [intersects[0].object]
+            } else {
+                this.outlinePass.selectedObjects = []
             }
         })
     }
@@ -49,7 +72,17 @@ class Game {
 
     async addModel() {
         const model = await loadGLTF('gltf/SheenChair.glb')
-        this.scene.add(model)
+        const geometryArray = []
+        const materialArray = []
+        model.traverse(obj => {
+            if (obj instanceof THREE.Mesh) {
+                geometryArray.push(obj.geometry)
+                materialArray.push(obj.material)
+            }
+        })
+        const mergeGeo = mergeBufferGeometries(geometryArray, true)
+        const group = new THREE.Mesh(mergeGeo, materialArray)
+        this.scene.add(group)
     }
 
     addResizeEventListener() {
@@ -71,7 +104,8 @@ class Game {
         requestAnimationFrame(this.step.bind(this))
         this.orbitControls && this.orbitControls.update()
         this.animationManager.step()
-        this.renderer.render(this.scene, this.camera)
+        // this.renderer.render(this.scene, this.camera)
+        this.composer.render()
     }
 }
 

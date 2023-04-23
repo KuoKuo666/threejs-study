@@ -2,8 +2,8 @@ import * as THREE from 'three'
 
 export const initScene = () => {
     const scene = new THREE.Scene()
-    scene.background = new THREE.Color('white')
-    const light = new THREE.AmbientLight('white', 1.3)
+    scene.background = new THREE.Color('#282c34')
+    const light = new THREE.AmbientLight('white', 1)
     scene.add(light)
     return scene
 }
