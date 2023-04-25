@@ -1,4 +1,5 @@
 import * as THREE from 'three'
+import * as echarts from 'echarts'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer'
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass'
@@ -21,6 +22,8 @@ class Game {
 
     composer: EffectComposer
     outlinePass: OutlinePass
+
+    updateTexture: THREE.Texture
 
     constructor() {
         this.scene = initScene()
@@ -76,17 +79,71 @@ class Game {
         const canvas = document.createElement('canvas')
         canvas.width = 256
         canvas.height = 256
-        const context = canvas.getContext('2d')
-        context.fillStyle = 'rgba(255, 255, 255, 0)' // 设置透明背景色
-        context.fillRect(0, 0, canvas.width, canvas.height) // 绘制透明矩形
-        context.font = '42px Arial'
-        context.fillStyle = '#ffffff'
-        context.fillText('kuokuo的椅子', 0, 100)
-        context.fillText('售价：666元', 0, 160)
+
+        const data = []
+        for (let i = 0; i < 5; ++i) {
+            data.push(Math.round(Math.random() * 200))
+        }
+
+        const dataArr1 = [1, 2, 3, 2, 1, 3]
+        const dataArr2 = [2, 1, 1, 2, 1, 2]
+
+        const chart = echarts.init(canvas)
+        const option: echarts.EChartOption<{ name: string, type: string, data: number[] }> = {
+            title: {
+                text: 'World Population'
+            },
+            tooltip: {
+                trigger: 'axis',
+                axisPointer: {
+                    type: 'shadow'
+                }
+            },
+            legend: {},
+            grid: {
+                left: '3%',
+                right: '4%',
+                bottom: '3%',
+                containLabel: true
+            },
+            xAxis: {
+                type: 'value',
+                boundaryGap: [0, 0.01]
+            },
+            yAxis: {
+                type: 'category',
+                data: ['Brazil', 'Indonesia', 'USA', 'India', 'China', 'World']
+            },
+            series: [
+                {
+                    name: '2011',
+                    type: 'bar',
+                    data: dataArr1
+                },
+                {
+                    name: '2012',
+                    type: 'bar',
+                    data: dataArr2
+                }
+            ]
+        }
+        chart.setOption(option)
+
+        // 定时器变化
+        setInterval(() => {
+            // 随机加减
+            const newArr1 = dataArr1.map(v => (v + Math.random()))
+            const newArr2 = dataArr1.map(v => (v + Math.random()))
+            option.series[0].data = newArr1
+            option.series[1].data = newArr2
+            chart.setOption(option)
+        }, 600)
+
         // 将 canvas 元素创建为纹理，并应用到模型上
         const texture = new THREE.CanvasTexture(canvas)
+        this.updateTexture = texture
         // 创建一个正方体模型
-        const geometry = new THREE.BoxGeometry(0.65, 0.65, 0.001)
+        const geometry = new THREE.BoxGeometry(1, 0.65, 0.001)
         const material = new THREE.MeshBasicMaterial({
             map: texture,
             transparent: true
@@ -128,6 +185,7 @@ class Game {
 
     step() {
         requestAnimationFrame(this.step.bind(this))
+        this.updateTexture && (this.updateTexture.needsUpdate = true)
         this.orbitControls && this.orbitControls.update()
         this.animationManager.step()
         // this.renderer.render(this.scene, this.camera)
