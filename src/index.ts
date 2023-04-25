@@ -30,14 +30,15 @@ class Game {
 
         this.orbitControls = this.addOrbitControls(this.camera, this.renderer)
         this.addModel()
+        this.addCanvasModel()
         this.addResizeEventListener()
         this.addClickEvent()
 
         this.composer = new EffectComposer(this.renderer)
-		const renderPass = new RenderPass(this.scene, this.camera)
-		this.composer.addPass(renderPass)
+        const renderPass = new RenderPass(this.scene, this.camera)
+        this.composer.addPass(renderPass)
 
-		const outlinePass = new OutlinePass(new THREE.Vector2(window.innerWidth, window.innerHeight), this.scene, this.camera)
+        const outlinePass = new OutlinePass(new THREE.Vector2(window.innerWidth, window.innerHeight), this.scene, this.camera)
         outlinePass.edgeStrength = 4
         outlinePass.edgeGlow = 1
         outlinePass.edgeThickness = 1
@@ -68,6 +69,31 @@ class Game {
         controls.enableDamping = true
         controls.update()
         return controls
+    }
+
+    addCanvasModel() {
+        // 创建一个 canvas 元素，并在其中绘制内容
+        const canvas = document.createElement('canvas')
+        canvas.width = 256
+        canvas.height = 256
+        const context = canvas.getContext('2d')
+        context.fillStyle = 'rgba(255, 255, 255, 0)' // 设置透明背景色
+        context.fillRect(0, 0, canvas.width, canvas.height) // 绘制透明矩形
+        context.font = '42px Arial'
+        context.fillStyle = '#ffffff'
+        context.fillText('kuokuo的椅子', 0, 100)
+        context.fillText('售价：666元', 0, 160)
+        // 将 canvas 元素创建为纹理，并应用到模型上
+        const texture = new THREE.CanvasTexture(canvas)
+        // 创建一个正方体模型
+        const geometry = new THREE.BoxGeometry(0.65, 0.65, 0.001)
+        const material = new THREE.MeshBasicMaterial({
+            map: texture,
+            transparent: true
+        })
+        const cube = new THREE.Mesh(geometry, material)
+        cube.position.set(0, 1.2, 0)
+        this.scene.add(cube)
     }
 
     async addModel() {
